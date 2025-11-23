@@ -1,0 +1,27 @@
+meta {
+  name: login
+  type: http
+  seq: 2
+}
+
+post {
+  url: http://localhost:8080/login
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "email": "email_fc7227184bc8",
+    "password": "password_b787d550c491"
+  }
+}
+
+vars:post-response {
+  accessToken: res.body.accessToken
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

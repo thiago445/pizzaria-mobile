@@ -1,5 +1,6 @@
 package com.thiagovm.dev.pizzaria.service;
 
+import com.thiagovm.dev.pizzaria.dto.ProductRequest;
 import com.thiagovm.dev.pizzaria.entity.Product;
 import com.thiagovm.dev.pizzaria.entity.ProductType;
 import com.thiagovm.dev.pizzaria.repository.ProductRepository;
@@ -19,20 +20,19 @@ public class ProductService {
         this.azureStorageService = azureStorageService;
     }
 
-    public Product createProduct(String name, String description, Double price, ProductType type, MultipartFile image) throws IOException {
+    public void createProduct(ProductRequest productRequest, MultipartFile image) throws IOException {
         String imageUrl = null;
         if (image != null && !image.isEmpty()) {
             imageUrl = azureStorageService.uploadFile(image, "product-images");
         }
 
         Product product = new Product();
-        product.setName(name);
-        product.setDescription(description);
-        product.setPrice(price);
-        product.setType(type);
+        product.setName(productRequest.name());
+        product.setDescription(productRequest.description());
+        product.setPrice(productRequest.price());
+        product.setType(productRequest.tipe());
         product.setImageUrl(imageUrl);
-
-        return productRepository.save(product);
+        productRepository.save(product);
     }
 
     public List<Product> getAll() {

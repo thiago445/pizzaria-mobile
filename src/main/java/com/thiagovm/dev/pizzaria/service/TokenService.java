@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service;
 
 
 import java.time.Instant;
-import java.util.stream.Collectors;
+
 
 @Service
 public class TokenService {
@@ -45,10 +45,12 @@ public class TokenService {
 
 
         var claims = JwtClaimsSet.builder()
-                .issuer("icarosBackend")
+                .issuer("pizzariaBackend")
+                .subject(user.get().getId().toString())
                 .issuedAt(now)
                 .expiresAt(now.plusSeconds(expiresIn))
                 .build();
+
         var jwtValue = jwtEncoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
         return new LoginResponse(jwtValue, expiresIn);
     }

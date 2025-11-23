@@ -1,54 +1,98 @@
 package com.thiagovm.dev.pizzaria.service;
 
-
-import com.thiagovm.dev.pizzaria.entity.Order;
-import com.thiagovm.dev.pizzaria.entity.Product;
-import com.thiagovm.dev.pizzaria.entity.User;
-import com.thiagovm.dev.pizzaria.repository.OrderRepository;
-import com.thiagovm.dev.pizzaria.repository.ProductRepository;
-import com.thiagovm.dev.pizzaria.repository.UserRepository;
+import com.thiagovm.dev.pizzaria.dto.*;
+import com.thiagovm.dev.pizzaria.entity.*;
+import com.thiagovm.dev.pizzaria.repository.*;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
-import org.springframework.http.HttpStatus;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class OrderService {
 
     private final OrderRepository orderRepository;
-    private final UserRepository userRepository;
     private final ProductRepository productRepository;
+    private final UserService userService;
 
-    public OrderService(OrderRepository orderRepository, UserRepository userRepository, ProductRepository productRepository) {
-        this.orderRepository = orderRepository;
-        this.userRepository = userRepository;
-        this.productRepository = productRepository;
-    }
+    public OrderResponseDTO createOrder(OrderRequestDTO dto,UUID token) {
+        User user =userService.findById(token);
 
-    public Order createOrder(UUID userId, Order order) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
-
+        Order order = new Order();
+        order.setStreet(dto.street());
+        order.setNumber(dto.numberHouse());
+        order.setComplement(dto.complement());
+        order.setNeighborhood(dto.neighborhood());
+        order.setCity(dto.city());
+        order.setState(dto.state());
+        order.setPaymentMethod(dto.paymentMethod());
         order.setUser(user);
 
-        double total = order.getItems().stream().mapToDouble(item -> {
-            Product product = productRepository.findById(item.getProduct().getId())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Product not found"));
+        List<OrderItem> items = new ArrayList<>();
+        double total = 0;
 
+        for (var itemReq : dto.items()) {
+
+            var product = productRepository.findById(itemReq.productId())
+                    .orElseThrow(() -> new RuntimeException("Produto não existe"));
+
+            OrderItem item = new OrderItem();
             item.setOrder(order);
-            item.setPrice(product.getPrice() * item.getQuantity());
+            item.setProduct(product);
+            item.setQuantity(itemReq.quantity());
+            item.setPrice(product.getPrice());
 
-            return item.getPrice();
-        }).sum();
+            total += product.getPrice() * itemReq.quantity();
 
+            items.add(item);
+        }
+
+        order.setItems(items);
         order.setTotalValue(total);
 
-        return orderRepository.save(order);
+        var savedOrder = orderRepository.save(order);
+
+        return new OrderResponseDTO(
+                savedOrder.getId(),
+                total
+        );
+    }
+    public List<OrderListItemDTO> listAll() {
+        return orderRepository.findAll()
+                .stream()
+                .map(o -> new OrderListItemDTO(
+                        o.getId(),
+                        o.getUser().getNome(),
+                        o.getTotalValue()
+                ))
+                .toList();
     }
 
-    public List<Order> getUserOrders(UUID userId) {
-        return orderRepository.findByUserId(userId);
+    public OrderDetailsDTO getOrderDetails(UUID orderId) {
+
+        var order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Pedido não encontrado"));
+
+        var items = order.getItems()
+                .stream()
+                .map(i -> new OrderDetailsItemDTO(
+                        i.getProduct().getId(),
+                        i.getProduct().getName(),
+                        i.getPrice(),
+                        i.getQuantity(),
+                        i.getPrice() * i.getQuantity()
+                ))
+                .toList();
+
+        return new OrderDetailsDTO(
+                order.getId(),
+                order.getUser().getNome(),
+                order.getUser().getEmail(),
+                order.getPaymentMethod().name(),
+                order.getTotalValue(),
+                items
+        );
     }
 }
-

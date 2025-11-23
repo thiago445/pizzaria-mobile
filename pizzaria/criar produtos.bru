@@ -1,0 +1,28 @@
+meta {
+  name: criar produtos
+  type: http
+  seq: 3
+}
+
+post {
+  url: http://localhost:8080/api/products
+  body: multipartForm
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:multipart-form {
+  name: coca-cola
+  description: um refresco de outro nivel
+  price: 11
+  type: DRINK
+  image: @file(/home/thiago/Imagens/Capturas de tela/Captura de tela de 2025-09-03 21-26-40.png)
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
