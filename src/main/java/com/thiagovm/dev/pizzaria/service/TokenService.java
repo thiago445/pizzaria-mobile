@@ -40,7 +40,7 @@ public class TokenService {
         }
 
         var now= Instant.now();
-        var expiresIn = 300l;
+        var expiresIn = 3000l;
 
 
 
